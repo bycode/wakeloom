@@ -72,7 +72,7 @@ func rememberDiagnosticSecrets(values ...string) {
 	sort.Slice(diagnosticSecrets.values, func(i, j int) bool { return len(diagnosticSecrets.values[i]) > len(diagnosticSecrets.values[j]) })
 }
 func rememberDiagnosticConfig(c Config) {
-	values := []string{apiKey, c.Token, c.CFClientID, c.CFClientSecret, c.HFToken}
+	values := []string{apiKey, c.Token, c.CFClientID, c.CFClientSecret, c.HFToken, c.LanAPIKey}
 	for _, p := range c.LLMs {
 		values = append(values, p.APIKey)
 	}

@@ -389,6 +389,18 @@
           <p class="err" id="gErr"></p>
         </div>
 
+        <div class="sec-h"><b>内网 OpenAI 接口</b><span class="d">把当前会话的对话模型提供给局域网里的其他软件</span></div>
+        <div class="card">
+          <label class="chk"><input type="checkbox" name="lan_api_enabled">启用</label>
+          <div class="row gap wrap" style="margin-top:14px">
+            <label class="fld grow">本机网卡<select name="lan_api_addr"></select></label>
+            <label class="fld narrow">端口<input type="number" name="lan_api_port" min="1" max="65535" placeholder="8787"></label>
+          </div>
+          <label class="fld">接口密钥<input name="lan_api_key" type="password" autocomplete="off" placeholder="至少 16 位"></label>
+          <div class="row gap wrap"><button type="button" class="btn sm" id="btnLanKey">生成密钥</button><span class="muted small" id="lanAPIState">未启用</span></div>
+          <p class="hint">其他软件的 Base URL 填状态里的地址，密钥用 Bearer。只提供模型列表和对话补全。工作台仍只在这台电脑上打开。Windows 防火墙第一次可能会询问是否允许传入连接。发来的请求会计入使用，空闲停机会等它结束再计时。Qwen 1M 启动配置没有这条 OpenAI 路径，请改用普通 Ollama 对话配置。密钥只保存在本机；星号表示沿用已保存的密钥。</p>
+        </div>
+
         <div class="sec-h"><b>自定义模型</b><span class="d">粘贴 Hugging Face 链接生成的启动配置</span><span class="grow"></span><button type="button" class="btn primary xs" id="btnCMAdd">＋ 添加模型</button></div>
         <div class="card cm-card"><div id="cmList" class="cm-list"><p class="muted small">读取中…</p></div>
           <p class="hint">内置配置不能修改或删除。模型来自第三方，请遵守其许可证和当地法律。</p></div>

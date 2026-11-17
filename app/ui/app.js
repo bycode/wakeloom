@@ -1316,10 +1316,49 @@ setTimeout(() => checkUpdate(false), 5000);
 setInterval(() => checkUpdate(false), 6 * 3600 * 1000);
 
 // ---------------- settings ----------------
+async function loadLanIfaces(selected) {
+  const sel = $("#setForm").elements.lan_api_addr;
+  if (!sel) return;
+  let ifaces = [];
+  try { ifaces = await api("/api/lan/interfaces"); } catch { ifaces = []; }
+  const seen = new Set();
+  sel.innerHTML = "";
+  const blank = document.createElement("option");
+  blank.value = "";
+  blank.textContent = "选择网卡";
+  sel.appendChild(blank);
+  for (const it of ifaces || []) {
+    if (!it || !it.addr || seen.has(it.addr)) continue;
+    seen.add(it.addr);
+    const o = document.createElement("option");
+    o.value = it.addr;
+    o.textContent = it.name + " · " + it.addr;
+    sel.appendChild(o);
+  }
+  if (selected && !seen.has(selected)) {
+    const o = document.createElement("option");
+    o.value = selected;
+    o.textContent = selected + "（当前不在本机）";
+    sel.appendChild(o);
+  }
+}
+async function refreshLanStatus() {
+  const el = $("#lanAPIState");
+  if (!el) return;
+  try {
+    const s = await api("/api/lan/status");
+    if (s.listening && s.base) el.textContent = "正在监听 " + s.base;
+    else if (s.error) el.textContent = s.error;
+    else if (s.enabled) el.textContent = "已启用，但还没开始监听";
+    else el.textContent = "未启用";
+  } catch (e) { el.textContent = e.message; }
+}
 async function loadSettings() {
   const r = await api("/api/config");
+  await loadLanIfaces(r.config.lan_api_addr || "");
   const f = $("#setForm");
   for (const [k, v] of Object.entries(r.config)) { const el = f.elements[k]; if (!el) continue; if (el.type === "checkbox") el.checked = !!v; else el.value = v ?? ""; }
+  refreshLanStatus();
   $("#dataDirText").textContent = "配置与模板存放在：" + r.data_dir;
   appCfg = r.config; renderMode();
   $("#verText").textContent = "v" + r.version; $("#updCur").textContent = "当前版本 v" + r.version; $("#updUrl").placeholder = r.default_update_url;
@@ -1335,12 +1374,19 @@ $("#setForm").onsubmit = async e => {
   c.llms = llms; c.default_llm = defaultLLM; c.mode = appCfg.mode || "gateway"; c.local_profile = appCfg.local_profile || "";
   try {
     await api("/api/config", { json: c }); appCfg = { ...appCfg, ...c }; const rr = await api("/api/config"); llms = rr.config.llms || []; renderLLMs(); draftHint();
+    if (rr.config && f.elements.lan_api_key) f.elements.lan_api_key.value = rr.config.lan_api_key || "";
     if (!e.quiet) { $("#setMsg").textContent = "已保存"; clearTimeout($("#setMsg")._t); $("#setMsg")._t = setTimeout(() => $("#setMsg").textContent = "", 2500); }
+    refreshLanStatus();
     pollStatus(); loadProfiles(); connectEvents();
   }
   catch (err) { $("#setMsg").textContent = "保存失败：" + err.message; }
 };
 $("#btnShowTok").onclick = () => { const i = $("#setForm").elements.token; i.type = i.type === "password" ? "text" : "password"; };
+$("#btnLanKey").onclick = () => {
+  const b = new Uint8Array(24);
+  crypto.getRandomValues(b);
+  $("#setForm").elements.lan_api_key.value = [...b].map(x => x.toString(16).padStart(2, "0")).join("");
+};
 $("#btnTest").onclick = async () => {
   const m = $("#setMsg"); clearTimeout(m._t);
   await $("#setForm").onsubmit({ preventDefault() { }, target: $("#setForm"), quiet: true });

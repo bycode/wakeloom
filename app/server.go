@@ -63,6 +63,9 @@ func newServer() http.Handler {
 		if c.HFToken != "" {
 			c.HFToken = "********"
 		}
+		if c.LanAPIKey != "" {
+			c.LanAPIKey = lanKeySentinel
+		}
 		llms := make([]LLMProvider, len(c.LLMs))
 		for i, p := range c.LLMs {
 			if p.APIKey != "" {
@@ -86,6 +89,11 @@ func newServer() http.Handler {
 		if c.HFToken == "********" {
 			c.HFToken = old.HFToken
 		}
+		if c.LanAPIKey == lanKeySentinel {
+			c.LanAPIKey = old.LanAPIKey
+		}
+		c.LanAPIKey = strings.TrimSpace(c.LanAPIKey)
+		c.LanAPIAddr = strings.TrimSpace(c.LanAPIAddr)
 		// the settings form does not carry the guide's state
 		c.Onboarded = old.Onboarded || c.Onboarded
 		c.OnboardStep, c.Checklist, c.ChecklistHidden, c.CURates = old.OnboardStep, old.Checklist, old.ChecklistHidden, old.CURates
@@ -106,12 +114,36 @@ func newServer() http.Handler {
 		if c.OutDir == "" {
 			c.OutDir = defaultOutDir()
 		}
+		if err := validateLanAPI(c); err != nil {
+			errOut(w, 400, err)
+			return
+		}
+		cfgMu.Lock()
+		cfg = c
+		cfgMu.Unlock()
+		if err := lanAPIApply(c); err != nil {
+			cfgMu.Lock()
+			cfg = old
+			cfgMu.Unlock()
+			errOut(w, 400, err)
+			return
+		}
 		if err := saveConfig(c); err != nil {
+			cfgMu.Lock()
+			cfg = old
+			cfgMu.Unlock()
+			_ = lanAPIApply(old)
 			errOut(w, 500, err)
 			return
 		}
 		store.poke()
 		jsonOut(w, 200, map[string]bool{"ok": true})
+	})
+	api.HandleFunc("GET /api/lan/interfaces", func(w http.ResponseWriter, r *http.Request) {
+		jsonOut(w, 200, localIPv4s())
+	})
+	api.HandleFunc("GET /api/lan/status", func(w http.ResponseWriter, r *http.Request) {
+		jsonOut(w, 200, lanAPIStatus())
 	})
 
 	// ---- gate passthrough ----
