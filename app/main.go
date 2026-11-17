@@ -30,6 +30,9 @@ func main() {
 	migrateOnboarding(hadConfig)
 	store.load()
 	startLocalGate()
+	if err := lanAPIApply(getConfig()); err != nil {
+		diagEvent("error", "lan", err.Error())
+	}
 	go cleanupOldExe()
 	go worker()
 	go ud.loop()

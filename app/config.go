@@ -29,8 +29,12 @@ type Config struct {
 	LocalIdleMin     int           `json:"local_idle_min"`
 	LocalMaxHours    float64       `json:"local_max_hours"`
 	UpdateURL        string        `json:"update_url"`
-	HFToken          string        `json:"hf_token"`      // local mode: Hugging Face token for gated models (stays on this PC)
-	UserdataSync     *bool         `json:"userdata_sync"` // back up / restore ComfyUI user data (nil = on)
+	HFToken          string        `json:"hf_token"`        // local mode: Hugging Face token for gated models (stays on this PC)
+	UserdataSync     *bool         `json:"userdata_sync"`   // back up / restore ComfyUI user data (nil = on)
+	LanAPIEnabled    bool          `json:"lan_api_enabled"` // OpenAI-compatible listener on one local NIC
+	LanAPIAddr       string        `json:"lan_api_addr"`
+	LanAPIPort       int           `json:"lan_api_port"`
+	LanAPIKey        string        `json:"lan_api_key"` // stays on this PC; never logged
 	// first-run guide (onboarding.go); not part of the settings form, kept across settings saves
 	Onboarded       bool               `json:"onboarded"`
 	OnboardStep     string             `json:"onboard_step,omitempty"`
